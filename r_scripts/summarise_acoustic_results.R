@@ -37,7 +37,6 @@ preprocess_data <- function(path_acoustic_feats){
   data_strict <- data_strict %>% select(-quality, -quality_snr)
   data_relaxed <- data_relaxed %>% select(-quality, -quality_snr)
   data_snr <- data_snr %>% select(-quality, -quality_snr)
-  df_mb <- df_mb %>% select(-filepath)
   
   final_df <- rbind(data_strict, data_relaxed, data_snr, df_mb)
   return(final_df)
