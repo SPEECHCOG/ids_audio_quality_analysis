@@ -94,6 +94,47 @@ plot_both_distributions <- function(data){
           text = element_text(family = "LM Roman 10", size = 20))
 }
 
+get_preprocessed_table <- function(data, corpus, feature, sig_level=0.05){
+  data <- data %>% select(-t, -ADS_std, -IDS_std, -ADS_count, -IDS_count)
+  # data <- data %>% mutate(p_value = ifelse(p_value <= sig_level, "*", "n.s."))
+  data <- data %>% mutate(ADS_mean = round(ADS_mean, 2),
+                          IDS_mean = round(IDS_mean, 2),
+                          p_value = round(p_value, 2),
+                          d = round(d, 2))
+  colnames(data) <- c('dataset', paste0(feature, '_p'), 
+                      paste0(feature, '_ADS'), paste0(feature, '_IDS'),
+                      paste0(feature, '_d'))
+  data['corpus'] = corpus
+  data <- data[, c(6,1,4,3,5,2)]
+  data <- data %>% mutate(dataset = factor(dataset, 
+                                           levels = c('Strict', 'Relaxed', 'SNR', 'All', 'ManyBabies'))) %>%
+    arrange(dataset)
+  return(data)
+}
+
+create_final_acousti_featues_table <- function(data_en, data_fr){
+  x_1 = get_preprocessed_table(get_statistics(data_en, 'mean_pitch'), 'Bergelson','1')
+  y_1 = get_preprocessed_table(get_statistics(data_fr, 'mean_pitch'), 'Lyon','1')
+  
+  x_2 = get_preprocessed_table(get_statistics(data_en, 'std_pitch'), 'Bergelson','2')
+  y_2 = get_preprocessed_table(get_statistics(data_fr, 'std_pitch'), 'Lyon','2')
+  
+  x_3 = get_preprocessed_table(get_statistics(data_en, 'mean_tilt'), 'Bergelson','3')
+  y_3 = get_preprocessed_table(get_statistics(data_fr, 'mean_tilt'), 'Lyon','3')
+  
+  x_4 = get_preprocessed_table(get_statistics(data_en, 'duration'), 'Bergelson','4')
+  y_4 = get_preprocessed_table(get_statistics(data_fr, 'duration'), 'Lyon','4')
+  
+  x <- merge(merge(merge(x_1, x_2, by=c('corpus', 'dataset')), x_3, by=c('corpus', 'dataset')), x_4, by=c('corpus', 'dataset'))
+  y <- merge(merge(merge(y_1, y_2, by=c('corpus', 'dataset')), y_3, by=c('corpus', 'dataset')), y_4, by=c('corpus', 'dataset'))
+  
+  x <- x %>% arrange(dataset) %>% filter(dataset!='ManyBabies')
+  y <- y %>% arrange(dataset)
+  
+  final_comparison <- rbind(x, y)
+  return(final_comparison)
+}
+
 
 data_ber <- format_data('../results/bergelson_acoustic_features.csv')
 data_lyon <- format_data('../results/lyon_acoustic_features.csv')
@@ -110,16 +151,6 @@ plot_both_distributions(all_data)
 ggsave('../plots/distributions.pdf', width = 6, height = 5, units = 'in')
 
 # Get the statistics for the different acoustic metrics per quality
-get_statistics(data_ber, 'mean_pitch')
-get_statistics(data_lyon, 'mean_pitch')
-
-get_statistics(data_ber, 'std_pitch')
-get_statistics(data_lyon, 'std_pitch')
-
-get_statistics(data_ber, 'mean_tilt')
-get_statistics(data_lyon, 'mean_tilt')
-
-get_statistics(data_ber, 'duration')
-get_statistics(data_lyon, 'duration')
+create_final_acousti_featues_table(data_ber, data_lyon)
 
 
